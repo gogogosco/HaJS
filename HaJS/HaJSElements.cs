@@ -79,7 +79,7 @@ namespace HaJS
             sb.Append(first ? "if (" : "else if (");
             if (arbitrary)
             {
-                sb.Append(value.Replace("$x", feature.GetLeft(compiler)));
+                sb.Append(ArbitraryJSTranslator.Translate(compiler, value.Replace("$x", feature.GetLeft(compiler))));
             }
             else
             {
@@ -113,7 +113,8 @@ namespace HaJS
 
         public MessageBaseElement(HaJSCompiler compiler, string text)
         {
-            status = compiler.RegisterMessage(this);
+            if (ControlFlowBreaker)
+                status = compiler.RegisterMessage(this);
             this.text = text;
         }
 
@@ -213,6 +214,14 @@ namespace HaJS
         public override string Compile(HaJSCompiler compiler)
         {
             return compiler.GetFeature("dlg_Ok").Compile(compiler, Stringify(text));
+        }
+
+        public override bool ControlFlowBreaker
+        {
+            get
+            {
+                return false;
+            }
         }
     }
 
@@ -346,7 +355,8 @@ namespace HaJS
 
         public string Compile(HaJSCompiler compiler)
         {
-            return feature.Compile(compiler, args.ElementAtOrDefault(0), args.ElementAtOrDefault(1), args.ElementAtOrDefault(2));
+            args = args.Select(x => x == null ? x : ArbitraryJSTranslator.Translate(compiler, x)).ToList();
+            return feature.Compile(compiler, args.ElementAtOrDefault(0), args.ElementAtOrDefault(1), args.ElementAtOrDefault(2)) + ";";
         }
 
         public override bool HasChildren

@@ -48,6 +48,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ArbitraryJSTranslator.cs" />
     <Compile Include="HaJSCompiler.cs" />
     <Compile Include="HaJSElements.cs" />
     <Compile Include="HaJSFeatures.cs" />

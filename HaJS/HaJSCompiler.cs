@@ -74,6 +74,11 @@ namespace HaJS
             return features[name];
         }
 
+        public bool HasFeature(string name)
+        {
+            return features.ContainsKey(name);
+        }
+
         public void Compile(string inPath, string outPath)
         {
             File.WriteAllText(outPath, CompileInternal(GetMainElementFromFile(inPath)));
@@ -97,6 +102,14 @@ namespace HaJS
                 return null;
         }
 
+        private string TryResolveResource(string name)
+        {
+            if (resources.ContainsKey(name))
+                return resources[name];
+            else
+                return name;
+        }
+
         private string GetTextFromElement(XmlElement element)
         {
             return element.HasAttribute("text") ? element.GetAttribute("text") : ResolveResource(element.GetAttribute("rsrc"));
@@ -111,16 +124,18 @@ namespace HaJS
                 return x.Remove(idx);
         }
 
-        private void BuildElementRecursive(XmlElement element, List<HaJSElement> targetList)
+        private void BuildElementRecursive(XmlElement element, ref List<HaJSElement> targetList)
         {
             HaJSElement result;
+            List<HaJSElement> elements;
             switch (element.Name)
             {
                 case "switch":
                     SwitchElement se = new SwitchElement((HaJSSwitchFeature)GetFeature("switch_" + element.GetAttribute("type")));
+                    elements = se.Children;
                     foreach (XmlElement caseNode in element.ChildNodes)
                     {
-                        BuildElementRecursive(caseNode, se.Children);
+                        BuildElementRecursive(caseNode, ref elements);
                     }
                     result = se;
                     break;
@@ -134,17 +149,19 @@ namespace HaJS
                     {
                         ce = new CaseElement(false, false, element.GetAttribute("val"));
                     }
+                    elements = ce.Children;
                     foreach (XmlElement subnode in element.ChildNodes)
                     {
-                        BuildElementRecursive(subnode, ce.Children);
+                        BuildElementRecursive(subnode, ref elements);
                     }
                     result = ce;
                     break;
                 case "default":
                     CaseElement def = new CaseElement(true, false, null);
+                    elements = def.Children;
                     foreach (XmlElement subnode in element.ChildNodes)
                     {
-                        BuildElementRecursive(subnode, def.Children);
+                        BuildElementRecursive(subnode, ref elements);
                     }
                     result = def;
                     break;
@@ -159,9 +176,8 @@ namespace HaJS
                             result = new PrevNextMessageElement(this, msgText);
                             break;
                         case "yn":
-                            string no = element.GetAttribute("no");
-                            string noRsrc = ResolveResource(no);
-                            result = new YesNoMessageElement(this, msgText, noRsrc == null ? no : noRsrc);
+                            string no = TryResolveResource(element.GetAttribute("no"));
+                            result = new YesNoMessageElement(this, msgText, no);
                             break;
                         case "ok":
                             result = new OkMessageElement(this, msgText);
@@ -172,17 +188,19 @@ namespace HaJS
                     break;
                 case "options":
                     OptionsMessageElement ome = new OptionsMessageElement(this, GetTextFromElement(element));
+                    elements = ome.Children;
                     foreach (XmlElement subnode in element.ChildNodes)
                     {
-                        BuildElementRecursive(subnode, ome.Children);
+                        BuildElementRecursive(subnode, ref elements);
                     }
                     result = ome;
                     break;
                 case "option":
                     OptionElement oe = new OptionElement(GetTextFromElement(element));
+                    elements = oe.Children;
                     foreach (XmlElement subnode in element.ChildNodes)
                     {
-                        BuildElementRecursive(subnode, oe.Children);
+                        BuildElementRecursive(subnode, ref elements);
                     }
                     result = oe;
                     break;
@@ -193,9 +211,23 @@ namespace HaJS
                     {
                         foreach (XmlElement subnode in element.ChildNodes)
                         {
-                            BuildElementRecursive(subnode, targetList);
+                            BuildElementRecursive(subnode, ref targetList);
                         }
                     }
+                    return;
+                case "assert":
+                    string type = element.GetAttribute("type");
+                    string fail = TryResolveResource(element.GetAttribute("onFail"));
+                    string cond = element.GetAttribute("cond");
+                    SwitchElement fakeSwitch = new SwitchElement((HaJSSwitchFeature)GetFeature("switch_" + type));
+                    CaseElement fakeCase = new CaseElement(false, true, cond);
+                    CaseElement fakeDef = new CaseElement(true, false, null);
+                    fakeSwitch.Children.Add(fakeCase);
+                    fakeSwitch.Children.Add(fakeDef);
+                    OkMessageElement fakeOk = new OkMessageElement(this, fail);
+                    fakeDef.Children.Add(fakeOk);
+                    targetList.Add(fakeSwitch);
+                    targetList = fakeCase.Children;
                     return;
                 default:
                     if (features.ContainsKey(element.Name))
@@ -276,7 +308,8 @@ namespace HaJS
             else if (root is MessageBaseElement)
             {
                 MessageBaseElement mbe = (MessageBaseElement)root;
-                WriteStatusChange(sb, mbe.NextStatus);
+                if (mbe.ControlFlowBreaker)
+                    WriteStatusChange(sb, mbe.NextStatus);
                 sb.AppendLine(mbe.Compile(this));
                 if (mbe is OkMessageElement)
                 {
@@ -352,7 +385,7 @@ namespace HaJS
             }
 
             List<HaJSElement> mainList = new List<HaJSElement>();
-            BuildElementRecursive((XmlElement)element.ChildNodes[hasRsrc ? 1 : 0], mainList);
+            BuildElementRecursive((XmlElement)element.ChildNodes[hasRsrc ? 1 : 0], ref mainList);
             HaJSElement mainElement = mainList[0];
             HashSet<int> startingContext = new HashSet<int>();
             startingContext.Add(-1);

@@ -38,15 +38,19 @@ namespace HaJS
                 return;
             HaJSCompiler jsc = new HaJSCompiler(serverConfigPathBox.Text);
             string outPath = Path.Combine(Path.GetDirectoryName(inputXmlBox.Text), Path.GetFileNameWithoutExtension(inputXmlBox.Text) + ".js");
+#if !DEBUG
             try
             {
+#endif
                 jsc.Compile(inputXmlBox.Text, outPath);
                 MessageBox.Show("Finished compiling to " + outPath);
+#if !DEBUG
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+#endif
         }
     }
 }
