@@ -109,7 +109,8 @@ namespace HaJS
     public abstract class MessageBaseElement : HaJSElement
     {
         public string text;
-        int status;
+        protected int status;
+        protected int style = -1;
 
         public MessageBaseElement(HaJSCompiler compiler, string text)
         {
@@ -145,6 +146,12 @@ namespace HaJS
         {
             get { return true; }
         }
+
+        public int Style
+        {
+            get { return style; }
+            set { style = value; }
+        }
     }
 
     public class NextMessageElement : MessageBaseElement
@@ -156,7 +163,8 @@ namespace HaJS
 
         public override string Compile(HaJSCompiler compiler)
         {
-            return compiler.GetFeature("dlg_Next").Compile(compiler, Stringify(text));
+            return style == -1 ? compiler.GetFeature("dlg_Next").Compile(compiler, Stringify(text))
+                               : compiler.GetFeature("dlg_NextExtended").Compile(compiler, Stringify(text), style.ToString());
         }
     }
 
@@ -169,7 +177,8 @@ namespace HaJS
 
         public override string Compile(HaJSCompiler compiler)
         {
-            return compiler.GetFeature("dlg_PrevNext").Compile(compiler, Stringify(text));
+            return style == -1 ? compiler.GetFeature("dlg_PrevNext").Compile(compiler, Stringify(text))
+                               : compiler.GetFeature("dlg_PrevNextExtended").Compile(compiler, Stringify(text), style.ToString());
         }
 
         private int GetPreviousStatus(HaJSElement parent)

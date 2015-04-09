@@ -17,11 +17,12 @@ namespace HaJS
     public class HaJSCompiler
     {
         private Dictionary<string, HaJSFeature> features = new Dictionary<string,HaJSFeature>();
-        private Dictionary<string, string> resources = new Dictionary<string, string>();
-        private HashSet<string> deps = new HashSet<string>();
-        private List<MessageBaseElement> messages = new List<MessageBaseElement>();
-        Dictionary<HashSet<int>, IndentedStringBuilder> sbl = new Dictionary<HashSet<int>, IndentedStringBuilder>();
-        List<HashSet<int>> contexts = new List<HashSet<int>>();
+        private Dictionary<string, string> resources;
+        private HashSet<string> deps;
+        private List<MessageBaseElement> messages;
+        public string manager;
+        Dictionary<HashSet<int>, IndentedStringBuilder> sbl;
+        List<HashSet<int>> contexts;
 
         public HaJSCompiler(string xmlPath)
         {
@@ -184,6 +185,10 @@ namespace HaJS
                             break;
                         default:
                             throw new ArgumentException("Unknown message type \"" + element.GetAttribute("style") + "\" in the element \"" + element.OuterXml + "\"");
+                    }
+                    if (element.HasAttribute("x"))
+                    {
+                        ((MessageBaseElement)result).Style = int.Parse(element.GetAttribute("x"));
                     }
                     break;
                 case "options":
@@ -374,7 +379,23 @@ namespace HaJS
 
         private string CompileInternal(XmlElement element)
         {
-            deps.Clear();
+            switch (element.Name)
+            {
+                case "npc":
+                    manager = "cm";
+                    break;
+                case "quest":
+                    manager = "qm";
+                    break;
+                default:
+                    throw new ArgumentException("Unknown script type \"" + element.Name + "\"");
+            }
+            resources = new Dictionary<string, string>();
+            deps = new HashSet<string>();
+            messages = new List<MessageBaseElement>();
+            sbl = new Dictionary<HashSet<int>, IndentedStringBuilder>();
+            contexts = new List<HashSet<int>>();
+
             bool hasRsrc = element.GetElementsByTagName("resources").Count > 0;
             if (hasRsrc)
             {
@@ -398,15 +419,26 @@ namespace HaJS
             {
                 sb.AppendLine("importPackage(" + dep + ");");
             }
-            sb.AppendLine("var status = 0;");
-            sb.AppendLine("function start() {");
-            sb.AppendLine("    status = -1;");
-	        sb.AppendLine("    action(1, 0, 0);");
-            sb.AppendLine("}");
-            sb.AppendLine("function action(mode, type, selection) {");
-            sb.AppendLine("    if (mode == -1) {");
-            sb.AppendLine("        cm.dispose();");
-            sb.AppendLine("    } else {");
+            if (manager == "cm")
+            {
+                sb.AppendLine("var status = 0;");
+                sb.AppendLine("function start() {");
+                sb.AppendLine("    status = -1;");
+                sb.AppendLine("    action(1, 0, 0);");
+                sb.AppendLine("}");
+                sb.AppendLine("function action(mode, type, selection) {");
+                sb.AppendLine("    if (mode == -1) {");
+                sb.AppendLine("        cm.dispose();");
+                sb.AppendLine("    } else {");
+            }
+            else if (manager == "qm")
+            {
+                sb.AppendLine("var status = -1;");
+                sb.AppendLine("function start(mode, type, selection) {");
+                sb.AppendLine("    if (mode == -1) {");
+                sb.AppendLine("        cm.dispose();");
+                sb.AppendLine("    } else {");
+            }
             foreach (HashSet<int> context in contexts)
             {
                 sb.AppendLine("        if (" + context.ToList().Select(x => "status == " + x.ToString()).Aggregate((x, y) => x + " || " + y) + ")");

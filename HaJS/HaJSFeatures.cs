@@ -30,6 +30,10 @@ namespace HaJS
                 compiler.Dependencies.Add(dep);
             }
             string result = val;
+            if (val.Contains("$."))
+            {
+                result = result.Replace("$.", compiler.manager + ".");
+            }
             if (val.Contains("$x"))
             {
                 result = result.Replace("$x", x);

@@ -52,5 +52,20 @@ namespace HaJS
             }
 #endif
         }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            if (serverConfigPathBox.Text == "" || inputXmlBox.Text == "")
+                return;
+            HaJSCompiler jsc = new HaJSCompiler(serverConfigPathBox.Text);
+            string folder = Path.GetDirectoryName(inputXmlBox.Text);
+            foreach (FileInfo fi in new DirectoryInfo(folder).GetFiles())
+            {
+                if (fi.Extension.ToLower() == ".xml")
+                {
+                    jsc.Compile(fi.FullName, Path.Combine(folder, Path.GetFileNameWithoutExtension(fi.FullName) + ".js"));
+                }
+            }
+        }
     }
 }
