@@ -65,7 +65,12 @@ namespace HaJS
         public override string Compile(HaJSCompiler compiler, string x = null, string y = null, string z = null)
         {
             string rval = base.Compile(compiler, x, y, z);
-            return left + " == " + rval;
+            string lval = left;
+            if (left.Contains("$."))
+            {
+                lval = lval.Replace("$.", compiler.manager + ".");
+            }
+            return lval + " == " + rval;
         }
 
         public string GetLeft(HaJSCompiler compiler)
@@ -73,6 +78,11 @@ namespace HaJS
             if (dep != null)
             {
                 compiler.Dependencies.Add(dep);
+            }
+            string lval = left;
+            if (left.Contains("$."))
+            {
+                lval = lval.Replace("$.", compiler.manager + ".");
             }
             return left;
         }

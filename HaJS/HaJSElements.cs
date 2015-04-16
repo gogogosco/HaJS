@@ -222,7 +222,8 @@ namespace HaJS
 
         public override string Compile(HaJSCompiler compiler)
         {
-            return compiler.GetFeature("dlg_Ok").Compile(compiler, Stringify(text));
+            return style == -1 ? compiler.GetFeature("dlg_Ok").Compile(compiler, Stringify(text))
+                               : compiler.GetFeature("dlg_OkExtended").Compile(compiler, Stringify(text), style.ToString());
         }
 
         public override bool ControlFlowBreaker

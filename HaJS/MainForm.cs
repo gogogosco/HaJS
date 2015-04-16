@@ -63,9 +63,22 @@ namespace HaJS
             {
                 if (fi.Extension.ToLower() == ".xml")
                 {
-                    jsc.Compile(fi.FullName, Path.Combine(folder, Path.GetFileNameWithoutExtension(fi.FullName) + ".js"));
+#if !DEBUG
+                    try
+                    {
+#endif
+                        jsc.Compile(fi.FullName, Path.Combine(folder, Path.GetFileNameWithoutExtension(fi.FullName) + ".js"));
+#if !DEBUG
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        break;
+                    }
+#endif
                 }
             }
+            MessageBox.Show("Finished compiling " + folder);
         }
     }
 }
