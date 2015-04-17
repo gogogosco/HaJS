@@ -84,7 +84,7 @@ namespace HaJS
             {
                 lval = lval.Replace("$.", compiler.manager + ".");
             }
-            return left;
+            return lval;
         }
     }
 }
