@@ -436,7 +436,7 @@ namespace HaJS
                 sb.AppendLine("var status = -1;");
                 sb.AppendLine("function start(mode, type, selection) {");
                 sb.AppendLine("    if (mode == -1) {");
-                sb.AppendLine("        cm.dispose();");
+                sb.AppendLine("        qm.dispose();");
                 sb.AppendLine("    } else {");
             }
             foreach (HashSet<int> context in contexts)
